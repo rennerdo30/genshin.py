@@ -248,10 +248,7 @@ class CookieManager(BaseCookieManager):
         Returns None if cookies are not set.
         """
         for name, value in self.cookies.items():
-            if name in ("ltuid", "account_id", "ltuid_v2", "account_id_v2"):
-                if not value:
-                    raise ValueError(f"{name} can not be an empty string.")
-
+            if name in ("ltuid", "account_id", "ltuid_v2", "account_id_v2") and len(str(value)) > 0:
                 return int(value)
 
         return None
