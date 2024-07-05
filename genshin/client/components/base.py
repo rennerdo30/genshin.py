@@ -1,7 +1,9 @@
 """Base ABC Client."""
+
 import abc
 import asyncio
 import base64
+import functools
 import json
 import logging
 import os
@@ -23,10 +25,26 @@ from genshin.utility import concurrency, deprecation, ds
 __all__ = ["BaseClient"]
 
 
+T = typing.TypeVar("T")
+CallableT = typing.TypeVar("CallableT", bound="typing.Callable[..., object]")
+AsyncCallableT = typing.TypeVar("AsyncCallableT", bound="typing.Callable[..., typing.Awaitable[object]]")
+
+
 class BaseClient(abc.ABC):
     """Base ABC Client."""
 
-    __slots__ = ("cookie_manager", "cache", "_lang", "_region", "_default_game", "uids", "authkeys", "_hoyolab_id")
+    __slots__ = (
+        "cookie_manager",
+        "cache",
+        "_lang",
+        "_region",
+        "_default_game",
+        "uids",
+        "authkeys",
+        "_hoyolab_id",
+        "_accounts",
+        "custom_headers",
+    )
 
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"  # noqa: E501
 
@@ -41,6 +59,7 @@ class BaseClient(abc.ABC):
     uids: typing.Dict[types.Game, int]
     authkeys: typing.Dict[types.Game, str]
     _hoyolab_id: typing.Optional[int]
+    _accounts: typing.Dict[types.Game, hoyolab_models.GenshinAccount]
 
     def __init__(
         self,
@@ -53,6 +72,9 @@ class BaseClient(abc.ABC):
         game: typing.Optional[types.Game] = None,
         uid: typing.Optional[int] = None,
         hoyolab_id: typing.Optional[int] = None,
+        device_id: typing.Optional[str] = None,
+        device_fp: typing.Optional[str] = None,
+        headers: typing.Optional[aiohttp.typedefs.LooseHeaders] = None,
         cache: typing.Optional[client_cache.Cache] = None,
         debug: bool = False,
     ) -> None:
@@ -61,6 +83,7 @@ class BaseClient(abc.ABC):
 
         self.uids = {}
         self.authkeys = {}
+        self._accounts = {}
 
         self.default_game = game
         self.lang = lang
@@ -70,6 +93,10 @@ class BaseClient(abc.ABC):
         self.proxy = proxy
         self.uid = uid
         self.hoyolab_id = hoyolab_id
+
+        self.custom_headers = dict(headers or {})
+        self.custom_headers.update({"x-rpc-device_id": device_id} if device_id else {})
+        self.custom_headers.update({"x-rpc-device_fp": device_fp} if device_fp else {})
 
     def __repr__(self) -> str:
         kwargs = dict(
@@ -319,6 +346,7 @@ class BaseClient(abc.ABC):
 
         headers = dict(headers or {})
         headers["User-Agent"] = self.USER_AGENT
+        headers.update(self.custom_headers)
 
         if method is None:
             method = "POST" if data else "GET"
@@ -365,6 +393,7 @@ class BaseClient(abc.ABC):
 
         headers = dict(headers or {})
         headers["User-Agent"] = self.USER_AGENT
+        headers.update(self.custom_headers)
 
         await self._request_hook("GET", url, headers=headers, **kwargs)
 
@@ -493,6 +522,39 @@ class BaseClient(abc.ABC):
 
         raise errors.AccountNotFound(msg="No UID provided and account has no game account bound to it.")
 
+    async def _update_cached_accounts(self) -> None:
+        """Update cached fallback accounts."""
+        mixed_accounts = await self.get_game_accounts()
+
+        game_accounts: typing.Dict[types.Game, typing.List[hoyolab_models.GenshinAccount]] = {}
+        for account in mixed_accounts:
+            if not isinstance(account.game, types.Game):  # pyright: ignore[reportUnnecessaryIsInstance]
+                continue
+
+            game_accounts.setdefault(account.game, []).append(account)
+
+        self._accounts = {}
+        for game, accounts in game_accounts.items():
+            self._accounts[game] = next(
+                (acc for acc in accounts if acc.uid == self.uids.get(game)), max(accounts, key=lambda a: a.level)
+            )
+
+    @concurrency.prevent_concurrency
+    async def _get_account(self, game: types.Game) -> hoyolab_models.GenshinAccount:
+        """Get a cached fallback account."""
+        if (account := self._accounts.get(game)) and (uid := self.uids.get(game)) and account.uid == uid:
+            return account
+
+        await self._update_cached_accounts()
+
+        if account := self._accounts.get(game):
+            if (uid := self.uids.get(game)) and account.uid != uid:
+                raise errors.AccountNotFound(msg="There is no game account with such UID.")
+
+            return account
+
+        raise errors.AccountNotFound(msg="Account has no game account bound to it.")
+
     def _get_hoyolab_id(self) -> int:
         """Get a cached fallback hoyolab ID."""
         if self.hoyolab_id is not None:
@@ -533,3 +595,21 @@ class BaseClient(abc.ABC):
                 coros.append(self._fetch_mi18n(key, lang, force=force))
 
         await asyncio.gather(*coros)
+
+
+def region_specific(region: types.Region) -> typing.Callable[[AsyncCallableT], AsyncCallableT]:
+    """Prevent function to be ran with unsupported regions."""
+
+    def decorator(func: AsyncCallableT) -> AsyncCallableT:
+        @functools.wraps(func)
+        async def wrapper(self: typing.Any, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+            if not hasattr(self, "region"):
+                raise TypeError("Cannot use @region_specific on a plain function.")
+            if region != self.region:
+                raise RuntimeError("The method can only be used with client region set to " + region)
+
+            return await func(self, *args, **kwargs)
+
+        return typing.cast("AsyncCallableT", wrapper)
+
+    return decorator

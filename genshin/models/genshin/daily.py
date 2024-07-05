@@ -1,8 +1,9 @@
 """Daily reward models."""
-import calendar
+
 import datetime
 import typing
 
+from genshin.constants import CN_TIMEZONE
 from genshin.models.model import Aliased, APIModel, Unique
 
 __all__ = ["ClaimedDailyReward", "DailyReward", "DailyRewardInfo"]
@@ -16,10 +17,8 @@ class DailyRewardInfo(typing.NamedTuple):
 
     @property
     def missed_rewards(self) -> int:
-        cn_timezone = datetime.timezone(datetime.timedelta(hours=8))
-        now = datetime.datetime.now(cn_timezone)
-        month_days = calendar.monthrange(now.year, now.month)[1]
-        return month_days - self.claimed_rewards
+        now = datetime.datetime.now(CN_TIMEZONE)
+        return now.day - self.claimed_rewards
 
 
 class DailyReward(APIModel):

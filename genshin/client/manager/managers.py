@@ -1,4 +1,5 @@
 """Cookie managers for making authenticated requests."""
+
 from __future__ import annotations
 
 import abc
@@ -64,6 +65,7 @@ class BaseCookieManager(abc.ABC):
     """A cookie manager for making requests."""
 
     _proxy: typing.Optional[yarl.URL] = None
+    _socks_proxy: typing.Optional[str] = None
 
     @classmethod
     def from_cookies(cls, cookies: typing.Optional[AnyCookieOrHeader] = None) -> BaseCookieManager:
@@ -111,18 +113,32 @@ class BaseCookieManager(abc.ABC):
     def proxy(self, proxy: typing.Optional[aiohttp.typedefs.StrOrURL]) -> None:
         if proxy is None:
             self._proxy = None
+            self._socks_proxy = None
             return
 
         proxy = yarl.URL(proxy)
-        if str(proxy.scheme) not in ("https", "http", "ws", "wss"):
+
+        if proxy.scheme in {"socks4", "socks5"}:
+            self._socks_proxy = str(proxy)
+            return
+
+        if proxy.scheme not in {"https", "http", "ws", "wss"}:
             raise ValueError("Proxy URL must have a valid scheme.")
 
         self._proxy = proxy
 
     def create_session(self, **kwargs: typing.Any) -> aiohttp.ClientSession:
         """Create a client session."""
+        if self._socks_proxy is not None:
+            import aiohttp_socks
+
+            connector = aiohttp_socks.ProxyConnector.from_url(self._socks_proxy)
+        else:
+            connector = None
+
         return aiohttp.ClientSession(
             cookie_jar=aiohttp.DummyCookieJar(),
+            connector=connector,
             **kwargs,
         )
 

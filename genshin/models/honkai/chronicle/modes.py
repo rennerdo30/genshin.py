@@ -1,4 +1,5 @@
 """Honkai battle chronicle models."""
+
 from __future__ import annotations
 
 import datetime
@@ -17,8 +18,8 @@ from genshin.models.honkai import battlesuit
 from genshin.models.model import Aliased, APIModel, Unique
 
 __all__ = [
-    "Boss",
     "ELF",
+    "Boss",
     "ElysianRealm",
     "MemorialArena",
     "MemorialBattle",

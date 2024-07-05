@@ -6,8 +6,7 @@ import pytest
 import genshin
 
 
-class LiteralCharacter(genshin.models.BaseCharacter):
-    ...
+class LiteralCharacter(genshin.models.BaseCharacter): ...
 
 
 LiteralCharacter.__pre_root_validators__ = LiteralCharacter.__pre_root_validators__[:-1]
@@ -25,14 +24,14 @@ lang = "en-us"  # initiate local scope
                 "name": "Kamisato Ayaka",
                 "element": "Cryo",
                 "rarity": 5,
-                "icon": "https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Ayaka.png",
+                "icon": "https://enka.network/ui/UI_AvatarIcon_Ayaka.png",
             },
             LiteralCharacter(
                 id=10000002,
                 name="Kamisato Ayaka",
                 element="Cryo",
                 rarity=5,
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Ayaka.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_Ayaka.png",
                 lang="en-us",
             ),
         ),
@@ -47,7 +46,7 @@ lang = "en-us"  # initiate local scope
                 name="Jean",
                 element="Anemo",
                 rarity=5,
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Qin.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_Qin.png",
                 lang="en-us",
             ),
         ),
@@ -63,7 +62,7 @@ lang = "en-us"  # initiate local scope
                 name="Signora",
                 element="Anemo",  # Anemo is the arbitrary fallback
                 rarity=6,  # 5 is the arbitrary fallback
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Signora.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_Signora.png",
                 lang="en-us",
             ),
         ),
@@ -80,7 +79,7 @@ lang = "en-us"  # initiate local scope
                 name="Traveler",
                 element="Light",
                 rarity=5,
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_PlayerBoy.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_PlayerBoy.png",
                 lang="en-us",
             ),
         ),
@@ -98,7 +97,7 @@ lang = "en-us"  # initiate local scope
                 name="Mona",
                 element="Hydro",
                 rarity=5,
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Mona.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_Mona.png",
                 lang="en-us",
             ),
         ),
@@ -127,14 +126,14 @@ lang = "en-us"  # initiate local scope
                 "name": "胡桃",
                 "element": "Pyro",
                 "rarity": 5,
-                "icon": "https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Hutao.png",
+                "icon": "https://enka.network/ui/UI_AvatarIcon_Hutao.png",
             },
             LiteralCharacter(
                 id=10000046,
                 name="胡桃",
                 element="Pyro",
                 rarity=5,
-                icon="https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon/UI_AvatarIcon_Hutao.png",
+                icon="https://enka.network/ui/UI_AvatarIcon_Hutao.png",
                 lang="en-us",
             ),
         ),

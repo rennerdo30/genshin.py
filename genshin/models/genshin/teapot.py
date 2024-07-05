@@ -1,4 +1,5 @@
 """Genshin serenitea pot replica display models."""
+
 from __future__ import annotations
 
 import datetime
@@ -60,7 +61,7 @@ class TeapotReplica(APIModel, Unique):
     images: typing.List[str] = Aliased("imgs")
     created_at: datetime.datetime
     stats: TeapotReplicaStats
-    lang: str
+    lang: str  # type: ignore
 
     author: TeapotReplicaAuthor
 

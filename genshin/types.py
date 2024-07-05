@@ -1,4 +1,5 @@
 """Types used in the library."""
+
 import enum
 import typing
 
@@ -31,6 +32,9 @@ class Game(str, enum.Enum):
 
     STARRAIL = "hkrpg"
     """Honkai Star Rail"""
+
+    ZZZ = "nap"
+    """Zenless Zone Zero"""
 
 
 IDOr = typing.Union[int, UniqueT]

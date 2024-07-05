@@ -1,4 +1,5 @@
 """StarRail battle chronicle component."""
+
 import asyncio
 import typing
 
@@ -126,3 +127,27 @@ class StarRailBattleChronicleClient(base.BaseBattleChronicleClient):
         payload = dict(schedule_type=schedule_type, need_detail="true")
         data = await self._request_starrail_record("rogue", uid, lang=lang, payload=payload)
         return models.StarRailRogue(**data)
+
+    async def get_starrail_pure_fiction(
+        self,
+        uid: typing.Optional[int] = None,
+        *,
+        previous: bool = False,
+        lang: typing.Optional[str] = None,
+    ) -> models.StarRailPureFiction:
+        """Get starrail pure fiction runs."""
+        payload = dict(schedule_type=2 if previous else 1, need_all="true")
+        data = await self._request_starrail_record("challenge_story", uid, lang=lang, payload=payload)
+        return models.StarRailPureFiction(**data)
+
+    async def get_starrail_apc_shadow(
+        self,
+        uid: typing.Optional[int] = None,
+        *,
+        previous: bool = False,
+        lang: typing.Optional[str] = None,
+    ) -> models.StarRailAPCShadow:
+        """Get starrail apocalyptic shadow runs."""
+        payload = dict(schedule_type=2 if previous else 1, need_all="true")
+        data = await self._request_starrail_record("challenge_boss", uid, lang=lang, payload=payload)
+        return models.StarRailAPCShadow(**data)

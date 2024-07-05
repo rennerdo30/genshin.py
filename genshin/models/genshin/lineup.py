@@ -1,4 +1,5 @@
 """Genshin lineup models."""
+
 from __future__ import annotations
 
 import datetime
@@ -295,7 +296,7 @@ class LineupPreview(APIModel, Unique):
         if isinstance(value[0], typing.Sequence):
             return value
 
-        return [[character for character in group["group"]] for group in value]
+        return [list(group["group"]) for group in value]
 
 
 class Lineup(LineupPreview):

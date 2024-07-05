@@ -5,15 +5,13 @@ import pytest
 
 import genshin
 
-CN_TIMEZONE = datetime.timezone(datetime.timedelta(hours=8))
-
 
 async def test_daily_reward(lclient: genshin.Client):
     signed_in, claimed_rewards = await lclient.get_reward_info()
 
     try:
         reward = await lclient.claim_daily_reward()
-    except genshin.GeetestTriggered:
+    except genshin.DailyGeetestTriggered:
         pytest.skip("Geetest triggered on daily reward.")
     except genshin.AlreadyClaimed:
         assert signed_in
@@ -35,7 +33,7 @@ async def test_starrail_daily_reward(lclient: genshin.Client):
 
     try:
         reward = await lclient.claim_daily_reward(game=genshin.types.Game.STARRAIL)
-    except genshin.GeetestTriggered:
+    except genshin.DailyGeetestTriggered:
         pytest.skip("Geetest triggered on daily reward.")
     except genshin.AlreadyClaimed:
         assert signed_in
@@ -54,7 +52,7 @@ async def test_starrail_daily_reward(lclient: genshin.Client):
 
 async def test_monthly_rewards(lclient: genshin.Client):
     rewards = await lclient.get_monthly_rewards()
-    now = datetime.datetime.now(CN_TIMEZONE)
+    now = datetime.datetime.now(genshin.constants.CN_TIMEZONE)
     assert len(rewards) == calendar.monthrange(now.year, now.month)[1]
 
 
