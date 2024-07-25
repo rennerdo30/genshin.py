@@ -93,7 +93,7 @@ async def test_calculate(client: genshin.Client):
     assert len(cost.artifacts) == 5 and all(len(i.list) == 2 for i in cost.artifacts)
     assert len(cost.talents) == 9
     assert len(cost.total) == 25
-    assert cost.total[0].name == "Mora" and cost.total[0].amount == 9_533_850
+    assert cost.total[0].name == "Hero's Wit"
 
 
 async def test_furnishing_calculate(client: genshin.Client):
@@ -109,6 +109,6 @@ async def test_calculator_characters_synced(lclient: genshin.Client):
 
 
 async def test_character_details(lclient: genshin.Client):
-    # Hu Tao
-    details = await lclient.get_character_details(10000046)
+    # Yelan
+    details = await lclient.get_character_details(10000060)
     assert details.weapon.level >= 80
