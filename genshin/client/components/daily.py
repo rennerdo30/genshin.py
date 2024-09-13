@@ -36,7 +36,7 @@ class DailyRewardClient(base.BaseClient):
     ) -> typing.Mapping[str, typing.Any]:
         """Make a request towards the daily reward endpoint."""
         params = dict(params or {})
-        headers = dict(headers or {})
+        headers = base.parse_loose_headers(headers)
 
         if game is None:
             if self.default_game is None:
@@ -66,8 +66,10 @@ class DailyRewardClient(base.BaseClient):
             headers["x-rpc-channel"] = "miyousheluodi"
             headers["x-rpc-device_model"] = str(self.hoyolab_id) or ""
 
-            if game == types.Game.GENSHIN:
+            if game is types.Game.GENSHIN:
                 headers["x-rpc-signgame"] = "hk4e"
+            elif game is types.Game.ZZZ:
+                headers["x-rpc-signgame"] = "zzz"
 
             headers["ds"] = ds_utility.generate_dynamic_secret(constants.DS_SALT["cn_signin"])
 

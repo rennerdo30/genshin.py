@@ -1,8 +1,13 @@
 """Main auth client."""
 
 import asyncio
+import json
 import logging
+import random
+import time
 import typing
+import uuid
+from string import digits
 
 import aiohttp
 
@@ -10,7 +15,6 @@ from genshin import constants, errors, types
 from genshin.client import routes
 from genshin.client.components import base
 from genshin.client.manager import managers
-from genshin.client.manager.cookie import fetch_cookie_token_with_game_token, fetch_stoken_with_game_token
 from genshin.models.auth.cookie import (
     AppLoginResult,
     CNWebLoginResult,
@@ -242,35 +246,19 @@ class AuthClient(subclients.AppAuthClient, subclients.WebAuthClient, subclients.
 
         scanned = False
         while True:
-            check_result = await self._check_qrcode(
-                creation_result.app_id, creation_result.device_id, creation_result.ticket
-            )
-            if check_result.status == QRCodeStatus.SCANNED and not scanned:
+            status, cookies = await self._check_qrcode(creation_result.ticket)
+            if status is QRCodeStatus.SCANNED and not scanned:
                 LOGGER_.info("QR code scanned")
                 scanned = True
-            elif check_result.status == QRCodeStatus.CONFIRMED:
+            elif status is QRCodeStatus.CONFIRMED:
                 LOGGER_.info("QR code login confirmed")
                 break
 
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
-        raw_data = check_result.payload.raw
-        assert raw_data is not None
-
-        cookie_token = await fetch_cookie_token_with_game_token(
-            game_token=raw_data.game_token, account_id=raw_data.account_id
-        )
-        stoken = await fetch_stoken_with_game_token(game_token=raw_data.game_token, account_id=int(raw_data.account_id))
-
-        cookies = {
-            "stoken_v2": stoken.token,
-            "ltuid": stoken.aid,
-            "account_id": stoken.aid,
-            "ltmid": stoken.mid,
-            "cookie_token": cookie_token,
-        }
         self.set_cookies(cookies)
-        return QRLoginResult(**cookies)
+        dict_cookies = {key: morsel.value for key, morsel in cookies.items()}
+        return QRLoginResult(**dict_cookies)
 
     @managers.no_multi
     async def create_mmt(self) -> MMT:
@@ -366,3 +354,43 @@ class AuthClient(subclients.AppAuthClient, subclients.WebAuthClient, subclients.
         verification_result = await self._verify_game_email(code, result.account.device_grant_ticket)
 
         return await self._os_game_login(result.account.uid, verification_result.game_token)
+
+    def _gen_random_fp(self) -> str:
+        """Generate a random device fingerprint used for generating authentic device fingerprint."""
+        char = digits + "abcdef"
+        return "".join(random.choices(char, k=13))
+
+    def _gen_ext_fields(self, oaid: str, board: str) -> str:
+        oaid_key = "oaid" if self.region is types.Region.CHINESE else "adid"
+        ext_fields = {oaid_key: oaid, "board": board}
+        return json.dumps(ext_fields)
+
+    async def generate_fp(
+        self,
+        *,
+        device_id: str,
+        device_board: str,
+        oaid: str,
+    ) -> str:
+        """Generate an authentic device fingerprint."""
+        device_id_key = "bbs_device_id" if self.region is types.Region.CHINESE else "hoyolab_device_id"
+        payload = {
+            "device_id": device_id,
+            "device_fp": self._gen_random_fp(),
+            "seed_id": str(uuid.uuid4()).lower(),
+            "seed_time": str(int(time.time() * 1000)),
+            "platform": "2",
+            "app_name": "bbs_cn" if self.region is types.Region.CHINESE else "bbs_oversea",
+            "ext_fields": self._gen_ext_fields(oaid, device_board),
+            device_id_key: str(uuid.uuid4()).lower(),
+        }
+
+        async with aiohttp.ClientSession() as session, session.post(
+            routes.GET_FP_URL.get_url(self.region), json=payload
+        ) as r:
+            data = await r.json()
+
+        if data["data"]["code"] != 200:
+            raise errors.GenshinException(data, data["data"]["msg"])
+
+        return data["data"]["device_fp"]
