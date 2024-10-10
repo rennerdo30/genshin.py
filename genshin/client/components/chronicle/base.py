@@ -31,7 +31,7 @@ class ChronicleCacheKey(cache.CacheKey):
     endpoint: str
     uid: int
     lang: str
-    params: typing.Tuple[typing.Any, ...] = ()
+    params: tuple[typing.Any, ...] = ()
 
 
 class BaseBattleChronicleClient(base.BaseClient):
@@ -45,11 +45,14 @@ class BaseBattleChronicleClient(base.BaseClient):
         region: typing.Optional[types.Region] = None,
         game: typing.Optional[types.Game] = None,
         is_card_wapi: bool = False,
+        is_nap_ledger: bool = False,
         **kwargs: typing.Any,
     ) -> typing.Mapping[str, typing.Any]:
         """Make a request towards the game record endpoint."""
         if is_card_wapi:
             base_url = routes.CARD_WAPI_URL.get_url(region or self.region)
+        elif is_nap_ledger:
+            base_url = routes.NAP_LEDGER_URL.get_url()
         else:
             game = game or self.default_game
             if game is None:
@@ -58,12 +61,10 @@ class BaseBattleChronicleClient(base.BaseClient):
 
         url = base_url / endpoint
 
-        mi18n_task = asyncio.create_task(self._fetch_mi18n("bbs", lang=lang or self.lang))
         update_task = asyncio.create_task(utility.update_characters_any(lang or self.lang, lenient=True))
 
         data = await self.request_hoyolab(url, lang=lang, region=region, **kwargs)
 
-        await mi18n_task
         try:
             await update_task
         except Exception as e:
@@ -72,21 +73,15 @@ class BaseBattleChronicleClient(base.BaseClient):
         return data
 
     async def get_record_cards(
-        self,
-        hoyolab_id: typing.Optional[int] = None,
-        *,
-        lang: typing.Optional[str] = None,
-    ) -> typing.List[models.hoyolab.RecordCard]:
+        self, hoyolab_id: typing.Optional[int] = None, *, lang: typing.Optional[str] = None
+    ) -> list[models.hoyolab.RecordCard]:
         """Get a user's record cards."""
         hoyolab_id = hoyolab_id or self._get_hoyolab_id()
 
         cache_key = cache.cache_key("records", hoyolab_id=hoyolab_id, lang=lang or self.lang)
         if not (data := await self.cache.get(cache_key)):
             data = await self.request_game_record(
-                "getGameRecordCard",
-                lang=lang,
-                params=dict(uid=hoyolab_id),
-                is_card_wapi=True,
+                "getGameRecordCard", lang=lang, params=dict(uid=hoyolab_id), is_card_wapi=True
             )
 
             if data["list"]:
@@ -98,10 +93,7 @@ class BaseBattleChronicleClient(base.BaseClient):
 
     @deprecation.deprecated("get_record_cards")
     async def get_record_card(
-        self,
-        hoyolab_id: typing.Optional[int] = None,
-        *,
-        lang: typing.Optional[str] = None,
+        self, hoyolab_id: typing.Optional[int] = None, *, lang: typing.Optional[str] = None
     ) -> models.hoyolab.RecordCard:
         """Get a user's record card."""
         cards = await self.get_record_cards(hoyolab_id, lang=lang)

@@ -1,15 +1,9 @@
 import enum
 import typing
 
-from genshin.models.model import Aliased, APIModel, Unique
+import pydantic
 
-if typing.TYPE_CHECKING:
-    import pydantic.v1 as pydantic
-else:
-    try:
-        import pydantic.v1 as pydantic
-    except ImportError:
-        import pydantic
+from genshin.models.model import Aliased, APIModel, Unique
 
 __all__ = (
     "AgentSkill",
@@ -102,6 +96,14 @@ class ZZZPropertyType(enum.IntEnum):
     AGENT_ANOMALY_PROFICIENCY = 8
     AGENT_PEN_RATIO = 9
     AGENT_ENERGY_GEN = 10
+    AGENT_PEN = 232
+
+    # Agent DMG bonus
+    PHYSICAL_DMG_BONUS = 315
+    FIRE_DMG_BONUS = 316
+    ICE_DMG_BONUS = 317
+    ELECTRIC_DMG_BONUS = 318
+    ETHER_DMG_BONUS = 319
 
     # Disc drive
     DISC_HP = 11103
@@ -137,7 +139,7 @@ class ZZZProperty(APIModel):
     type: typing.Union[int, ZZZPropertyType] = Aliased("property_id")
     value: str = Aliased("base")
 
-    @pydantic.validator("type", pre=True)
+    @pydantic.field_validator("type", mode="before")
     def __cast_id(cls, v: int) -> typing.Union[int, ZZZPropertyType]:
         # Prevent enum crash
         try:

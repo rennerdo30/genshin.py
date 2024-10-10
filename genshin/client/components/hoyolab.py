@@ -84,18 +84,16 @@ class HoyolabClient(base.BaseClient):
                 url / "announcement/api/getAnnList",
                 lang=lang,
                 params=params,
-                static_cache=client_cache.cache_key("announcements", endpoint="info", lang=lang or self.lang),
             ),
             self.request_hoyolab(
                 url / "announcement/api/getAnnContent",
                 lang=lang,
                 params=params,
-                static_cache=client_cache.cache_key("announcements", endpoint="details", lang=lang or self.lang),
             ),
         )
 
-        announcements: typing.List[typing.Mapping[str, typing.Any]] = []
-        extra_list: typing.List[typing.Mapping[str, typing.Any]] = (
+        announcements: list[typing.Mapping[str, typing.Any]] = []
+        extra_list: list[typing.Mapping[str, typing.Any]] = (
             info["pic_list"][0]["type_list"] if "pic_list" in info and info["pic_list"] else []
         )
         for sublist in info["list"] + extra_list:
@@ -161,7 +159,7 @@ class HoyolabClient(base.BaseClient):
         if self.cookie_manager.multi:
             uid = uid or await self._get_uid(types.Game.GENSHIN)
         else:
-            uid = 900000005
+            uid = uid or 900000005
         return await self._request_announcements(types.Game.GENSHIN, uid, lang=lang)
 
     async def get_zzz_announcements(
@@ -174,7 +172,7 @@ class HoyolabClient(base.BaseClient):
         if self.cookie_manager.multi:
             uid = uid or await self._get_uid(types.Game.ZZZ)
         else:
-            uid = 1300000000
+            uid = uid or 1300000000
         return await self._request_announcements(types.Game.ZZZ, uid, lang=lang)
 
     async def get_starrail_announcements(
@@ -187,7 +185,7 @@ class HoyolabClient(base.BaseClient):
         if self.cookie_manager.multi:
             uid = uid or await self._get_uid(types.Game.STARRAIL)
         else:
-            uid = 809162009
+            uid = uid or 809162009
         return await self._request_announcements(types.Game.STARRAIL, uid, lang=lang)
 
     @managers.requires_cookie_token
@@ -227,7 +225,7 @@ class HoyolabClient(base.BaseClient):
                 game_biz=utility.get_prod_game_biz(self.region, game),
                 lang=utility.create_short_lang_code(lang or self.lang),
             ),
-            method="POST" if game is types.Game.STARRAIL else "GET"
+            method="POST" if game is types.Game.STARRAIL else "GET",
         )
 
     @managers.no_multi

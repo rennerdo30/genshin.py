@@ -30,7 +30,6 @@ __all__ = [
     "HKRPG_URL",
     "INFO_LEDGER_URL",
     "LINEUP_URL",
-    "MI18N",
     "NAP_URL",
     "RECORD_URL",
     "REWARD_URL",
@@ -153,6 +152,8 @@ RECORD_URL = GameRoute(
         nap="https://api-takumi-record.mihoyo.com/event/game_record_zzz/api/zzz",
     ),
 )
+NAP_LEDGER_URL = Route("https://sg-public-api.hoyolab.com/event/nap_ledger")
+
 CARD_WAPI_URL = InternationalRoute(
     overseas="https://bbs-api-os.hoyolab.com/game_record/card/wapi",
     chinese="https://api-takumi-record.mihoyo.com/game_record/app/card/wapi",
@@ -244,10 +245,6 @@ YSULOG_URL = InternationalRoute(
     chinese="https://hk4e-api.mihoyo.com/common/hk4e_self_help_query/User/",
 )
 
-MI18N = dict(
-    bbs="https://fastcdn.hoyoverse.com/mi18n/bbs_oversea/m11241040191111/m11241040191111-{lang}.json",
-    inquiry="https://mi18n-os.hoyoverse.com/webstatic/admin/mi18n/hk4e_global/m02251421001311/m02251421001311-{lang}.json",
-)
 
 COOKIE_V2_REFRESH_URL = Route("https://sg-public-api.hoyoverse.com/account/ma-passport/token/getBySToken")
 GET_COOKIE_TOKEN_BY_GAME_TOKEN_URL = Route("https://api-takumi.mihoyo.com/auth/api/getCookieAccountInfoByGameToken")
