@@ -38,7 +38,7 @@ class BatteryCharge(APIModel):
 
     @pydantic.model_validator(mode="before")
     def __unnest_progress(cls, values: dict[str, typing.Any]) -> dict[str, typing.Any]:
-        return {**values, **values.pop("progress")}
+        return {**values, **values.pop("progress", {})}
 
 
 class ZZZEngagement(APIModel):
@@ -66,8 +66,8 @@ class SurveyPoints(APIModel):
 class HollowZero(APIModel):
     """Hollow Zero in ZZZ sticky notes model."""
 
-    bounty_commission: BountyCommission
-    investigation_point: SurveyPoints = Aliased("survey_points")
+    bounty_commission: typing.Optional[BountyCommission] = None
+    investigation_point: typing.Optional[SurveyPoints] = Aliased("survey_points", default=None)
 
 
 class ZZZNotes(APIModel):
@@ -85,9 +85,11 @@ class ZZZNotes(APIModel):
 
     @pydantic.model_validator(mode="before")
     def __unnest_value(cls, values: dict[str, typing.Any]) -> dict[str, typing.Any]:
-        values["video_store_state"] = values["vhs_sale"]["sale_state"]
-        values["hollow_zero"] = {
-            "bounty_commission": values["bounty_commission"],
-            "survey_points": values["survey_points"],
-        }
+        if "video_store_state" not in values:
+            values["video_store_state"] = values["vhs_sale"]["sale_state"]
+        if "hollow_zero" not in values:
+            values["hollow_zero"] = {
+                "bounty_commission": values["bounty_commission"],
+                "survey_points": values["survey_points"],
+            }
         return values

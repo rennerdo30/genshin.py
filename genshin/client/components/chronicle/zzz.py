@@ -1,8 +1,10 @@
 """StarRail battle chronicle component."""
 
+import asyncio
 import typing
 
 from genshin import errors, types, utility
+from genshin.client import routes
 from genshin.models import zzz as models
 
 from . import base
@@ -67,16 +69,35 @@ class ZZZBattleChronicleClient(base.BaseBattleChronicleClient):
             params=params,
             data=data,
             cache=cache_key,
-            is_nap_ledger=is_nap_ledger,
+            custom_route=routes.NAP_LEDGER_URL if is_nap_ledger else None,
         )
 
+    @typing.overload
+    async def get_zzz_notes(
+        self,
+        uid: typing.Optional[int] = ...,
+        *,
+        lang: typing.Optional[str] = ...,
+        autoauth: bool = ...,
+        return_raw_data: typing.Literal[False] = ...,
+    ) -> models.ZZZNotes: ...
+    @typing.overload
+    async def get_zzz_notes(
+        self,
+        uid: typing.Optional[int] = ...,
+        *,
+        lang: typing.Optional[str] = ...,
+        autoauth: bool = ...,
+        return_raw_data: typing.Literal[True] = ...,
+    ) -> typing.Mapping[str, typing.Any]: ...
     async def get_zzz_notes(
         self,
         uid: typing.Optional[int] = None,
         *,
         lang: typing.Optional[str] = None,
         autoauth: bool = True,
-    ) -> models.ZZZNotes:
+        return_raw_data: bool = False,
+    ) -> typing.Union[models.ZZZNotes, typing.Mapping[str, typing.Any]]:
         """Get ZZZ sticky notes (real-time notes)."""
         try:
             data = await self._request_zzz_record("note", uid, lang=lang)
@@ -90,6 +111,8 @@ class ZZZBattleChronicleClient(base.BaseBattleChronicleClient):
             await self.update_settings(3, True, game=types.Game.ZZZ)
             data = await self._request_zzz_record("note", uid, lang=lang)
 
+        if return_raw_data:
+            return data
         return models.ZZZNotes(**data)
 
     async def get_zzz_diary(
@@ -176,13 +199,16 @@ class ZZZBattleChronicleClient(base.BaseBattleChronicleClient):
         lang: typing.Optional[str] = None,
     ) -> typing.Union[models.ZZZFullAgent, typing.Sequence[models.ZZZFullAgent]]:
         """Get a ZZZ character's detailed info."""
-        if isinstance(character_id, list):
-            character_id = tuple(character_id)
+        if isinstance(character_id, typing.Sequence):
+            tasks = [
+                self._request_zzz_record("avatar/info", uid, lang=lang, payload={"id_list[]": character_id_})
+                for character_id_ in character_id
+            ]
+            results = await asyncio.gather(*tasks)
+            return [models.ZZZFullAgent(**data["avatar_list"][0]) for data in results]
 
         data = await self._request_zzz_record("avatar/info", uid, lang=lang, payload={"id_list[]": character_id})
-        if isinstance(character_id, int):
-            return models.ZZZFullAgent(**data["avatar_list"][0])
-        return [models.ZZZFullAgent(**item) for item in data["avatar_list"]]
+        return models.ZZZFullAgent(**data["avatar_list"][0])
 
     async def get_shiyu_defense(
         self, uid: typing.Optional[int] = None, *, previous: bool = False, lang: typing.Optional[str] = None

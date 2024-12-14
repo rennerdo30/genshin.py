@@ -2,15 +2,26 @@
 
 import typing
 
+import pydantic
+
 from genshin.models.model import Aliased, APIModel
 
 from ..character import ZZZPartialAgent
 
 __all__ = (
+    "HIACoin",
     "ZZZBaseBangboo",
     "ZZZStats",
     "ZZZUserStats",
 )
+
+
+class HIACoin(APIModel):
+    """HIACoin model."""
+
+    num: int
+    name: str
+    icon: str = Aliased("url")
 
 
 class ZZZStats(APIModel):
@@ -22,6 +33,13 @@ class ZZZStats(APIModel):
     shiyu_defense_frontiers: int = Aliased("cur_period_zone_layer_count")
     bangboo_obtained: int = Aliased("buddy_num")
     achievement_count: int
+    hia_coin: typing.Optional[HIACoin] = Aliased("commemorative_coins_list")
+
+    @pydantic.field_validator("hia_coin", mode="before")
+    def __unnest_hia_coin(
+        cls, v: typing.List[typing.Dict[str, typing.Any]]
+    ) -> typing.Optional[typing.Dict[str, typing.Any]]:
+        return v[0] if v else None
 
 
 class ZZZBaseBangboo(APIModel):
@@ -40,3 +58,4 @@ class ZZZUserStats(APIModel):
     stats: ZZZStats
     agents: typing.Sequence[ZZZPartialAgent] = Aliased("avatar_list")
     bangboos: typing.Sequence[ZZZBaseBangboo] = Aliased("buddy_list")
+    in_game_avatar: str = Aliased("cur_head_icon_url")

@@ -57,21 +57,23 @@ class ZZZBaseAgent(APIModel, Unique):
     flat_icon: str = Aliased("hollow_icon_path")
 
     @property
+    def base_icon_url(self) -> str:
+        return "https://act-webstatic.hoyoverse.com/game_record/zzzv2"
+
+    @property
     def square_icon(self) -> str:
         """Example: https://act-webstatic.hoyoverse.com/game_record/zzz/role_square_avatar/role_square_avatar_1131.png"""
-        return (
-            f"https://act-webstatic.hoyoverse.com/game_record/zzz/role_square_avatar/role_square_avatar_{self.id}.png"
-        )
+        return f"{self.base_icon_url}/role_square_avatar/role_square_avatar_{self.id}.png"
 
     @property
     def rectangle_icon(self) -> str:
         """Example: https://act-webstatic.hoyoverse.com/game_record/zzz/role_rectangle_avatar/role_rectangle_avatar_1131.png"""
-        return f"https://act-webstatic.hoyoverse.com/game_record/zzz/role_rectangle_avatar/role_rectangle_avatar_{self.id}.png"
+        return f"{self.base_icon_url}/role_rectangle_avatar/role_rectangle_avatar_{self.id}.png"
 
     @property
     def banner_icon(self) -> str:
         """Example: https://act-webstatic.hoyoverse.com/game_record/zzz/role_vertical_painting/role_vertical_painting_1131.png"""
-        return f"https://act-webstatic.hoyoverse.com/game_record/zzz/role_vertical_painting/role_vertical_painting_{self.id}.png"
+        return f"{self.base_icon_url}/role_vertical_painting/role_vertical_painting_{self.id}.png"
 
 
 class ZZZPartialAgent(ZZZBaseAgent):
@@ -95,7 +97,7 @@ class ZZZPropertyType(enum.IntEnum):
     AGENT_ANOMALY_MASTERY = 7
     AGENT_ANOMALY_PROFICIENCY = 8
     AGENT_PEN_RATIO = 9
-    AGENT_ENERGY_GEN = 10
+    AGENT_ENERGY_GEN = 11
     AGENT_PEN = 232
 
     # Agent DMG bonus
@@ -105,31 +107,31 @@ class ZZZPropertyType(enum.IntEnum):
     ELECTRIC_DMG_BONUS = 318
     ETHER_DMG_BONUS = 319
 
-    # Disc drive
-    DISC_HP = 11103
-    DISC_ATK = 12103
-    DISC_DEF = 13103
-    DISC_PEN = 23203
-    DISC_BONUS_PHYSICAL_DMG = 31503
-    DISC_BONUS_FIRE_DMG = 31603
-    DISC_BONUS_ICE_DMG = 31703
-    DISC_BONUS_ELECTRIC_DMG = 31803
-    DISC_BONUS_ETHER_DMG = 31903
-
-    # W-engine
-    ENGINE_HP = 11102
-    ENGINE_BASE_ATK = 12101
-    ENGINE_ATK = 12102
-    ENGINE_DEF = 13102
-    ENGINE_ENERGY_REGEN = 30502
-
-    # Disc drive and w-engine shared
+    # Disc drive and w-engine
     CRIT_RATE = 20103
     CRIT_DMG = 21103
+
     ANOMALY_PROFICIENCY = 31203
     ANOMALY_MASTERY = 31402
-    PEN_RATIO = 23103
+    ENERGY_REGEN = 30502
     IMPACT = 12202
+
+    BASE_ATK = 12101
+    FLAT_HP = 11103
+    FLAT_ATK = 12103
+    FLAT_DEF = 13103
+    FLAT_PEN = 23203
+
+    HP_PERCENT = 11102
+    ATK_PERCENT = 12102
+    DEF_PERCENT = 13102
+    PEN_PERCENT = 23103
+
+    DISC_PHYSICAL_DMG_BONUS = 31503
+    DISC_FIRE_DMG_BONUS = 31603
+    DISC_ICE_DMG_BONUS = 31703
+    DISC_ELECTRIC_DMG_BONUS = 31803
+    DISC_ETHER_DMG_BONUS = 31903
 
 
 class ZZZProperty(APIModel):

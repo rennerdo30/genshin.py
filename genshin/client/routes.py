@@ -140,7 +140,7 @@ COMMUNITY_URL = InternationalRoute(
 )
 RECORD_URL = GameRoute(
     overseas=dict(
-        genshin="https://bbs-api-os.hoyolab.com/game_record/genshin/api",
+        genshin="https://sg-public-api.hoyolab.com/event/game_record/genshin/api",
         hkrpg="https://bbs-api-os.hoyolab.com/game_record/hkrpg/api",
         honkai3rd="https://bbs-api-os.hoyolab.com/game_record/honkai3rd/api",
         nap="https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz",
@@ -328,3 +328,5 @@ GET_FP_URL = InternationalRoute(
     overseas="https://sg-public-data-api.hoyoverse.com/device-fp/api/getFp",
     chinese="https://public-data-api.mihoyo.com/device-fp/api/getFp",
 )
+
+MIMO_URL = Route("https://sg-public-api.hoyolab.com/event/e2023mimotravel")

@@ -26,7 +26,7 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
         payload: typing.Optional[typing.Mapping[str, typing.Any]] = None,
         cache: bool = False,
     ) -> typing.Mapping[str, typing.Any]:
-        """Get an arbitrary honkai object."""
+        """Get an arbitrary genshin object."""
         payload = dict(payload or {})
         original_payload = payload.copy()
 
@@ -66,7 +66,12 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
         lang: typing.Optional[str] = None,
     ) -> models.PartialGenshinUserStats:
         """Get partial genshin user without character equipment."""
-        data = await self._request_genshin_record("index", uid, lang=lang)
+        data = await self._request_genshin_record(
+            "index",
+            uid,
+            lang=lang,
+            payload={"avatar_list_type": 0},  # Set to 1 for characters with equipment
+        )
         return models.PartialGenshinUserStats(**data)
 
     async def get_genshin_characters(
@@ -76,8 +81,8 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
         lang: typing.Optional[str] = None,
     ) -> typing.Sequence[models.Character]:
         """Get genshin user characters."""
-        data = await self._request_genshin_record("character", uid, lang=lang, method="POST")
-        return [models.Character(**i) for i in data["avatars"]]
+        data = await self._request_genshin_record("character/list", uid, lang=lang, method="POST")
+        return [models.Character(**i) for i in data["list"]]
 
     @typing.overload
     async def get_genshin_detailed_characters(
@@ -128,7 +133,7 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
         """Get genshin user."""
         data, character_data = await asyncio.gather(
             self._request_genshin_record("index", uid, lang=lang),
-            self._request_genshin_record("character", uid, lang=lang, method="POST"),
+            self._request_genshin_record("character/list", uid, lang=lang, method="POST"),
         )
         data = {**data, **character_data}
 
@@ -164,13 +169,32 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
 
         return models.ImgTheater(**data)
 
+    @typing.overload
+    async def get_genshin_notes(
+        self,
+        uid: typing.Optional[int] = ...,
+        *,
+        lang: typing.Optional[str] = ...,
+        autoauth: bool = ...,
+        return_raw_data: typing.Literal[False] = ...,
+    ) -> models.Notes: ...
+    @typing.overload
+    async def get_genshin_notes(
+        self,
+        uid: typing.Optional[int] = ...,
+        *,
+        lang: typing.Optional[str] = ...,
+        autoauth: bool = ...,
+        return_raw_data: typing.Literal[True] = ...,
+    ) -> typing.Mapping[str, typing.Any]: ...
     async def get_genshin_notes(
         self,
         uid: typing.Optional[int] = None,
         *,
         lang: typing.Optional[str] = None,
         autoauth: bool = True,
-    ) -> models.Notes:
+        return_raw_data: bool = False,
+    ) -> typing.Union[models.Notes, typing.Mapping[str, typing.Any]]:
         """Get genshin real-time notes."""
         try:
             data = await self._request_genshin_record("dailyNote", uid, lang=lang)
@@ -184,6 +208,8 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
             await self.update_settings(3, True, game=types.Game.GENSHIN)
             data = await self._request_genshin_record("dailyNote", uid, lang=lang)
 
+        if return_raw_data:
+            return data
         return models.Notes(**data)
 
     async def get_genshin_activities(self, uid: int, *, lang: typing.Optional[str] = None) -> models.Activities:
@@ -281,6 +307,13 @@ class GenshinBattleChronicleClient(base.BaseBattleChronicleClient):
                 server_key=utility.recognize_genshin_server(uid),
             ),
         )
+
+    async def get_genshin_event_calendar(
+        self, uid: int, *, lang: typing.Optional[str] = None
+    ) -> models.GenshinEventCalendar:
+        """Get Genshin event calendar."""
+        data = await self._request_genshin_record("act_calendar", uid, lang=lang, method="POST")
+        return models.GenshinEventCalendar(**data)
 
     get_spiral_abyss = get_genshin_spiral_abyss
     get_notes = get_genshin_notes
