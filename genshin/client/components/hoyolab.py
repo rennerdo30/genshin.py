@@ -1,7 +1,9 @@
 """Hoyolab component."""
 
 import asyncio
+import json
 import typing
+import uuid
 import warnings
 
 import yarl
@@ -276,7 +278,11 @@ class HoyolabClient(base.BaseClient):
                 if self.default_game is None:
                     raise RuntimeError("No default game set.")
                 game = self.default_game
+
+            if game not in {types.Game.ZZZ, types.Game.STARRAIL, "hoyolab"}:
+                raise ValueError(f"{game!r} does not support Traveling Mimo.")
             game_id, version_id = await self._get_mimo_game_data(game)
+
         return game_id, version_id
 
     @base.region_specific(types.Region.OVERSEAS)
@@ -380,3 +386,85 @@ class HoyolabClient(base.BaseClient):
         if mimo_game is None:
             raise ValueError(f"Game {game!r} not found in the list of Traveling Mimo games.")
         return mimo_game.point
+
+    @base.region_specific(types.Region.OVERSEAS)
+    async def get_mimo_lottery_info(
+        self,
+        *,
+        game_id: typing.Optional[int] = None,
+        version_id: typing.Optional[int] = None,
+        game: typing.Optional[typing.Union[typing.Literal["hoyolab"], types.Game]] = None,
+        lang: typing.Optional[str] = None,
+    ) -> models.MimoLotteryInfo:
+        """Get Traveling Mimo lottery info."""
+        game_id, version_id = await self._parse_mimo_args(game_id, version_id, game)
+        data = await self.request(
+            routes.MIMO_URL.get_url() / "lottery-info",
+            params=dict(game_id=game_id, lang=lang or self.lang, version_id=version_id),
+        )
+        return models.MimoLotteryInfo(**data)
+
+    @base.region_specific(types.Region.OVERSEAS)
+    async def draw_mimo_lottery(
+        self,
+        *,
+        game_id: typing.Optional[int] = None,
+        version_id: typing.Optional[int] = None,
+        game: typing.Optional[typing.Union[typing.Literal["hoyolab"], types.Game]] = None,
+        lang: typing.Optional[str] = None,
+    ) -> models.MimoLotteryResult:
+        """Draw a Traveling Mimo lottery."""
+        game_id, version_id = await self._parse_mimo_args(game_id, version_id, game)
+        data = await self.request(
+            routes.MIMO_URL.get_url() / "lottery",
+            data=dict(game_id=game_id, lang=lang or self.lang, version_id=version_id),
+            method="POST",
+        )
+        return models.MimoLotteryResult(**data)
+
+    async def reply_to_post(self, content: str, *, post_id: int) -> int:
+        """Reply to a community post."""
+        data = await self.request_bbs(
+            "community/post/wapi/releaseReply",
+            data=dict(
+                post_id=str(post_id),
+                content=f"<p>{content}</p>",
+                image_list=[],
+                reply_bubble_id="",
+                structured_content=json.dumps([{"insert": f"{content}\n"}]),
+            ),
+            method="POST",
+            headers={"x-rpc-device_id": str(uuid.uuid4())},
+        )
+        return int(data["reply_id"])
+
+    async def delete_reply(self, *, reply_id: int, post_id: int) -> None:
+        """Delete a reply."""
+        await self.request_bbs(
+            "community/post/wapi/deleteReply",
+            data=dict(reply_id=reply_id, post_id=post_id),
+            method="POST",
+        )
+
+    async def get_replies(self, *, size: int = 15) -> typing.Sequence[models.Reply]:
+        """Get the latest replies as a list of tuples, where the first element is the reply ID and the second is the content."""
+        data = await self.request_bbs(
+            "community/post/wapi/userReply",
+            params=dict(size=size),
+        )
+        return [models.Reply(**i["reply"]) for i in data["list"]]
+
+    async def _request_join(self, topic_id: int, *, is_cancel: bool) -> None:
+        await self.request_bbs(
+            "community/topic/wapi/join",
+            data=dict(topic_id=topic_id, is_cancel=is_cancel),
+            method="POST",
+        )
+
+    async def join_topic(self, topic_id: int) -> None:
+        """Join a topic."""
+        await self._request_join(topic_id, is_cancel=False)
+
+    async def leave_topic(self, topic_id: int) -> None:
+        """Leave a topic."""
+        await self._request_join(topic_id, is_cancel=True)

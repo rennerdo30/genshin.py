@@ -7,7 +7,18 @@ import pydantic
 from genshin import types
 from genshin.models.model import Aliased, APIModel, DateTimeField
 
-__all__ = ("MimoGame", "MimoShopItem", "MimoShopItemStatus", "MimoTask", "MimoTaskStatus", "MimoTaskType")
+__all__ = (
+    "MimoGame",
+    "MimoLotteryInfo",
+    "MimoLotteryResult",
+    "MimoLotteryReward",
+    "MimoShopItem",
+    "MimoShopItemStatus",
+    "MimoTask",
+    "MimoTaskStatus",
+    "MimoTaskType",
+    "PartialMimoLotteryReward",
+)
 
 
 class MimoTaskStatus(enum.IntEnum):
@@ -22,10 +33,21 @@ class MimoTaskType(enum.IntEnum):
     """Mimo task type."""
 
     FINISHABLE = 1
-    COMMUNITY = 3
-    DAILY_LOGIN = 12
-    CONSECUTIVE_LOGIN = 13
-    IN_GAME = 16
+    """e.g. Sunday Advanced Tutorial: What is the core Charge mechanic?"""
+    VISIT = 2
+    """e.g. Visit the 【Honkai: Star Rail】 Interest Group on the day"""
+    COMMENT = 3
+    """e.g. Participate in this week's creative interactions and leave your creations in the comments"""
+    HSR_GAME = 8
+    """e.g. Complete Divergent Universe or Simulated Universe 1 time"""
+    TRAILER = 10
+    """e.g. Myriad Celestia Trailer — "After the Sunset" | Honkai: Star Rail"""
+    ZZZ_DAILY_LOGIN = 12
+    """e.g. Log into Zenless Zone Zero today"""
+    ZZZ_CONSECUTIVE_LOGIN = 13
+    """e.g. Log into the game for 7 days"""
+    ZZZ_GAME = 16
+    """e.g. Reach 400 Engagement today"""
 
 
 class MimoShopItemStatus(enum.IntEnum):
@@ -94,3 +116,42 @@ class MimoShopItem(APIModel):
     user_count: int
     next_refresh_time: datetime.timedelta
     expire_day: int
+
+
+class PartialMimoLotteryReward(APIModel):
+    """Partial mimo lottery reward."""
+
+    type: int
+    icon: str
+    name: str
+
+
+class MimoLotteryReward(PartialMimoLotteryReward):
+    """Mimo lottery reward."""
+
+    expire_day: int
+
+
+class MimoLotteryInfo(APIModel):
+    """Mimo lottery info."""
+
+    current_point: int = Aliased("point")
+    cost: int
+    current_count: int = Aliased("count")
+    limit_count: int
+    rewards: typing.Sequence[MimoLotteryReward] = Aliased("award_list")
+
+
+class MimoLotteryResult(APIModel):
+    """Mimo lottery result."""
+
+    reward: PartialMimoLotteryReward
+    reward_id: int = Aliased("award_id")
+    game_id: int
+    src_type: int
+    code: str = Aliased("exchange_code")
+
+    @pydantic.model_validator(mode="before")
+    def __nest_reward(cls, v: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+        v["reward"] = {"type": v.pop("type"), "icon": v.pop("icon"), "name": v.pop("name")}
+        return v

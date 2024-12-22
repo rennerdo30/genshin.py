@@ -49,10 +49,21 @@ class ZZZEngagement(APIModel):
 
 
 class BountyCommission(APIModel):
-    """ZZZ sticky notes, Hollow Zero bounty commission model."""
+    """Bounty commission progress model."""
 
-    num: int
+    cur_completed: int = Aliased("num")
     total: int
+    refresh_time: datetime.timedelta
+
+    @property
+    def completed(self) -> bool:
+        """Whether the bounty commissions are completed."""
+        return self.cur_completed == self.total
+
+    @property
+    def reset_datetime(self) -> datetime.datetime:
+        """The datetime when the bounty commission will be reset."""
+        return datetime.datetime.now().astimezone() + self.refresh_time
 
 
 class SurveyPoints(APIModel):
@@ -70,6 +81,24 @@ class HollowZero(APIModel):
     investigation_point: typing.Optional[SurveyPoints] = Aliased("survey_points", default=None)
 
 
+class WeeklyTask(APIModel):
+    """ZZZ sticky notes, Weekly task model."""
+
+    cur_point: int
+    max_point: int
+    refresh_time: datetime.timedelta
+
+    @property
+    def completed(self) -> bool:
+        """Whether the weekly tasks is full completed."""
+        return self.cur_point >= self.max_point
+
+    @property
+    def reset_datetime(self) -> datetime.datetime:
+        """The datetime when the weekly tasks will be reset."""
+        return datetime.datetime.now().astimezone() + self.refresh_time
+
+
 class ZZZNotes(APIModel):
     """Zenless Zone Zero sticky notes model."""
 
@@ -78,6 +107,7 @@ class ZZZNotes(APIModel):
     scratch_card_completed: bool = Aliased("card_sign")
     video_store_state: VideoStoreState
     hollow_zero: HollowZero
+    weekly_task: WeeklyTask
 
     @pydantic.field_validator("scratch_card_completed", mode="before")
     def __transform_value(cls, v: typing.Literal["CardSignDone", "CardSignNotDone"]) -> bool:
