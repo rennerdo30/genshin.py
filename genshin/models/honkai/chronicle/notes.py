@@ -1,3 +1,5 @@
+import typing
+
 import pydantic
 
 from genshin.models.model import TZDateTime
@@ -52,5 +54,5 @@ class HonkaiNotes(pydantic.BaseModel):
 
     greedy_endless: GreedyEndless
     ultra_endless: UltraEndless
-    battle_field: BattleField
+    battle_field: typing.Optional[BattleField] = None
     god_war: GodWar

@@ -3,10 +3,11 @@ import typing
 
 import pydantic
 
-from genshin.models.model import Aliased, APIModel, TZDateTime
+from genshin.models.model import Aliased, APIModel, DateTime, TZDateTime
 from genshin.models.zzz.character import ZZZElementType, ZZZSpecialty
 
 __all__ = (
+    "ChallengeBangboo",
     "DeadlyAssault",
     "DeadlyAssaultAgent",
     "DeadlyAssaultBoss",
@@ -28,10 +29,11 @@ class ShiyuDefenseBangboo(APIModel):
     id: int
     rarity: typing.Literal["S", "A"]
     level: int
+    icon: str = Aliased("bangboo_rectangle_url")
 
-    @property
-    def icon(self) -> str:
-        return f"https://act-webstatic.hoyoverse.com/game_record/zzz/bangboo_square_avatar/bangboo_square_avatar_{self.id}.png"
+
+class ChallengeBangboo(ShiyuDefenseBangboo):
+    """Bangboo model for backward compatibility."""
 
 
 class ShiyuDefenseCharacter(APIModel):
@@ -76,7 +78,7 @@ class ShiyuDefenseNode(APIModel):
     """Shiyu Defense node model."""
 
     characters: list[ShiyuDefenseCharacter] = Aliased("avatars")
-    bangboo: typing.Optional[ShiyuDefenseBangboo] = Aliased("buddy")
+    bangboo: typing.Optional[ShiyuDefenseBangboo] = Aliased("buddy", default=None)
     recommended_elements: list[ZZZElementType] = Aliased("element_type_list")
     enemies: list[ShiyuDefenseMonster] = Aliased("monster_info")
 
@@ -179,6 +181,7 @@ class DeadlyAssaultChallenge(APIModel):
     boss: DeadlyAssaultBoss
     buffs: typing.Sequence[DeadlyAssaultBuff] = Aliased("buffer")
     agents: typing.Sequence[DeadlyAssaultAgent] = Aliased("avatar_list")
+    bangboo: typing.Optional[ShiyuDefenseBangboo] = Aliased("buddy", default=None)
 
     @pydantic.field_validator("challenge_time", mode="before")
     def __parse_datetime(cls, value: typing.Mapping[str, typing.Any]) -> typing.Optional[TZDateTime]:
@@ -197,8 +200,8 @@ class DeadlyAssault(APIModel):
     """ZZZ Deadly Assault model."""
 
     id: int = Aliased("zone_id")
-    start_time: datetime.datetime
-    end_time: datetime.datetime
+    start_time: typing.Optional[DateTime]
+    end_time: typing.Optional[DateTime]
 
     challenges: typing.Sequence[DeadlyAssaultChallenge] = Aliased("list")
     has_data: bool
@@ -208,12 +211,6 @@ class DeadlyAssault(APIModel):
 
     nickname: str = Aliased("nick_name")
     player_avatar: str = Aliased("avatar_icon")
-
-    @pydantic.field_validator("start_time", "end_time", mode="before")
-    def __parse_datetime(cls, value: typing.Mapping[str, typing.Any]) -> typing.Optional[TZDateTime]:
-        if value:
-            return datetime.datetime(**value)
-        return None
 
     @pydantic.field_validator("rank_percent", mode="before")
     def __parse_rank_percent(cls, value: int) -> str:
